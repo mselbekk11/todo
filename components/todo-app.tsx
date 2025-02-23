@@ -60,6 +60,7 @@ export default function TodoApp() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editTaskTitle, setEditTaskTitle] = useState('');
   const [editTaskDescription, setEditTaskDescription] = useState('');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
   // Load data from localStorage only once on client side
   useEffect(() => {
@@ -161,6 +162,23 @@ export default function TodoApp() {
     setProjects((prev) => [...prev, newProject]);
     setNewProjectName('');
     setShowProjectModal(false);
+  };
+
+  const deleteProject = (projectId: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    // Also remove all tasks associated with this project
+    setTasks((prev) => prev.filter((t) => t.projectId !== projectId));
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId(null);
+    }
+  };
+
+  const editProject = (projectId: string, newName: string) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, name: newName } : p))
+    );
+    setEditingProjectId(null);
+    setNewProjectName('');
   };
 
   const getCurrentViewTitle = () => {
@@ -273,13 +291,12 @@ export default function TodoApp() {
                     <SidebarMenuItem key={project.id}>
                       <SidebarMenuButton
                         className={cn(
-                          'w-full justify-between',
+                          'w-full justify-between pl-3',
                           selectedProjectId === project.id && 'bg-accent'
                         )}
                         onClick={() => setSelectedProjectId(project.id)}
                       >
-                        <span className='flex items-center gap-2'>
-                          <Layout className='h-4 w-4' />
+                        <span className='flex items-center'>
                           {project.name}
                         </span>
                         <Badge variant='secondary'>
@@ -300,7 +317,9 @@ export default function TodoApp() {
         <Dialog open={showProjectModal} onOpenChange={setShowProjectModal}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Project</DialogTitle>
+              <DialogTitle>
+                {editingProjectId ? 'Edit Project' : 'Add Project'}
+              </DialogTitle>
             </DialogHeader>
             <div className='py-4'>
               <Input
@@ -308,18 +327,34 @@ export default function TodoApp() {
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') addProject();
+                  if (e.key === 'Enter') {
+                    editingProjectId
+                      ? editProject(editingProjectId, newProjectName)
+                      : addProject();
+                  }
                 }}
               />
             </div>
             <DialogFooter>
               <Button
                 variant='ghost'
-                onClick={() => setShowProjectModal(false)}
+                onClick={() => {
+                  setShowProjectModal(false);
+                  setEditingProjectId(null);
+                  setNewProjectName('');
+                }}
               >
                 Cancel
               </Button>
-              <Button onClick={addProject}>Add Project</Button>
+              <Button
+                onClick={() => {
+                  editingProjectId
+                    ? editProject(editingProjectId, newProjectName)
+                    : addProject();
+                }}
+              >
+                {editingProjectId ? 'Save Changes' : 'Add Project'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -377,15 +412,37 @@ export default function TodoApp() {
         <main className='flex-1 w-full overflow-auto'>
           <div className='border-b p-3 flex items-center justify-between'>
             <h1 className='text-xl font-bold'>{getCurrentViewTitle()}</h1>
-            <Button
-              onClick={() => setShowAddTaskModal(true)}
-              className='gap-2'
-              variant='default'
-              size='sm'
-            >
-              <Plus className='h-4 w-4' />
-              Add task
-            </Button>
+            {selectedProjectId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='h-8 w-8 text-muted-foreground'
+                  >
+                    <MoreHorizontal className='h-4 w-4' />
+                    <span className='sr-only'>Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='end'>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setEditingProjectId(selectedProjectId);
+                      setNewProjectName(getCurrentViewTitle());
+                      setShowProjectModal(true);
+                    }}
+                  >
+                    Edit project
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className='text-red-600'
+                    onClick={() => deleteProject(selectedProjectId)}
+                  >
+                    Delete project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId={selectedProjectId || 'inbox'}>
@@ -489,6 +546,20 @@ export default function TodoApp() {
               )}
             </Droppable>
           </DragDropContext>
+
+          <div
+            onClick={() => setShowAddTaskModal(true)}
+            className='flex gap-3 py-2 px-4 items-center border-b hover:bg-[#27272a80] cursor-pointer'
+          >
+            <div className='relative flex h-4 w-4 items-center justify-center'>
+              <input
+                type='checkbox'
+                className='peer h-4 w-4 cursor-pointer appearance-none rounded-sm border border-gray-300'
+                disabled
+              />
+            </div>
+            <div className='text-muted-foreground'>Add task</div>
+          </div>
         </main>
       </div>
     </SidebarProvider>
