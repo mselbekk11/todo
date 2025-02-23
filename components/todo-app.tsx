@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Inbox, Plus, Trash2, Layout } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { cn } from '@/lib/utils';
 
 import {
@@ -159,6 +160,33 @@ export default function TodoApp() {
     return project?.name || 'Inbox';
   };
 
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(tasks);
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    // Get the tasks for the current view (either project tasks or inbox tasks)
+    const currentTasks = items.filter((task) =>
+      selectedProjectId ? task.projectId === selectedProjectId : !task.projectId
+    );
+
+    // Remove the dragged task from its position
+    const [movedTask] = currentTasks.splice(sourceIndex, 1);
+
+    // Insert the task at the new position
+    currentTasks.splice(destinationIndex, 0, movedTask);
+
+    // Update the full tasks array by replacing tasks for the current view
+    // while keeping other tasks unchanged
+    const newTasks = items.filter((task) =>
+      selectedProjectId ? task.projectId !== selectedProjectId : task.projectId
+    );
+
+    setTasks([...newTasks, ...currentTasks]);
+  };
+
   // Optionally, you can prevent rendering until data is loaded
   if (!isLoaded) {
     return null; // or return a loading spinner
@@ -300,63 +328,86 @@ export default function TodoApp() {
               Add task
             </Button>
           </div>
-          <div className=''>
-            <div>
-              {filteredTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={cn(
-                    'flex gap-3 py-2 px-4 items-center border-b hover:bg-[#27272a80]'
-                  )}
-                >
-                  <div className='relative flex h-4 w-4 items-center justify-center'>
-                    <input
-                      type='checkbox'
-                      checked={task.completed}
-                      onChange={() => toggleTask(task.id)}
-                      className='peer h-4 w-4 cursor-pointer appearance-none rounded-sm border border-gray-300 checked:border-red-500 checked:bg-red-500'
-                    />
-                    <svg
-                      className='pointer-events-none absolute hidden h-2.5 w-2.5 text-white peer-checked:block'
-                      xmlns='http://www.w3.org/2000/svg'
-                      viewBox='0 0 24 24'
-                      fill='none'
-                      stroke='currentColor'
-                      strokeWidth='4'
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId={selectedProjectId || 'inbox'}>
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef}>
+                  {filteredTasks.map((task, index) => (
+                    <Draggable
+                      key={task.id}
+                      draggableId={task.id}
+                      index={index}
                     >
-                      <polyline points='20 6 9 17 4 12'></polyline>
-                    </svg>
-                  </div>
-                  <div className='flex-1'>
-                    <p
-                      className={cn(
-                        'font-medium',
-                        task.completed && 'line-through'
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={cn(
+                            'flex gap-3 py-2 px-4 items-center border-b hover:bg-[#27272a80]',
+                            snapshot.isDragging && 'bg-accent'
+                          )}
+                        >
+                          <div className='relative flex h-4 w-4 items-center justify-center'>
+                            <input
+                              type='checkbox'
+                              checked={task.completed}
+                              onChange={() => toggleTask(task.id)}
+                              className='peer h-4 w-4 cursor-pointer appearance-none rounded-sm border border-gray-300 checked:border-red-500 checked:bg-red-500'
+                            />
+                            <svg
+                              className='pointer-events-none absolute hidden h-2.5 w-2.5 text-white peer-checked:block'
+                              xmlns='http://www.w3.org/2000/svg'
+                              viewBox='0 0 24 24'
+                              fill='none'
+                              stroke='currentColor'
+                              strokeWidth='4'
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                            >
+                              <polyline points='20 6 9 17 4 12'></polyline>
+                            </svg>
+                          </div>
+                          <div className='flex-1 flex items-center gap-2'>
+                            <p
+                              className={cn(
+                                'font-medium',
+                                task.completed && 'line-through'
+                              )}
+                            >
+                              {task.title}
+                            </p>
+                            {task.description && (
+                              <>
+                                <span className='text-zinc-600 dark:text-zinc-500'>
+                                  |
+                                </span>
+                                <p className='text-sm text-zinc-500 dark:text-zinc-400 truncate max-w-[400px]'>
+                                  {task.description.length > 100
+                                    ? task.description.substring(0, 100) + '...'
+                                    : task.description}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            onClick={() => deleteTask(task.id)}
+                            className='h-8 w-8 text-muted-foreground hover:text-red-500'
+                          >
+                            <Trash2 className='h-4 w-4' />
+                            <span className='sr-only'>Delete task</span>
+                          </Button>
+                        </div>
                       )}
-                    >
-                      {task.title}
-                    </p>
-                    {task.description && (
-                      <p className='mt-1 text-sm text-muted-foreground'>
-                        {task.description}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    onClick={() => deleteTask(task.id)}
-                    className='h-8 w-8 text-muted-foreground hover:text-red-500'
-                  >
-                    <Trash2 className='h-4 w-4' />
-                    <span className='sr-only'>Delete task</span>
-                  </Button>
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </main>
       </div>
     </SidebarProvider>
