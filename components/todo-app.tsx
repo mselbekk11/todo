@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Inbox, Plus, Trash2, Layout } from 'lucide-react';
+import { Inbox, Plus, Trash2, Layout, MoreHorizontal } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import {
   Sidebar,
@@ -51,6 +57,9 @@ export default function TodoApp() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null
   );
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState('');
+  const [editTaskDescription, setEditTaskDescription] = useState('');
 
   // Load data from localStorage only once on client side
   useEffect(() => {
@@ -187,6 +196,23 @@ export default function TodoApp() {
     setTasks([...newTasks, ...currentTasks]);
   };
 
+  const handleEditTask = () => {
+    if (!editingTask) return;
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === editingTask.id
+          ? {
+              ...task,
+              title: editTaskTitle,
+              description: editTaskDescription,
+            }
+          : task
+      )
+    );
+    setEditingTask(null);
+  };
+
   // Optionally, you can prevent rendering until data is loaded
   if (!isLoaded) {
     return null; // or return a loading spinner
@@ -315,6 +341,39 @@ export default function TodoApp() {
           </DialogContent>
         </Dialog>
 
+        <Dialog
+          open={!!editingTask}
+          onOpenChange={(open) => !open && setEditingTask(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+            </DialogHeader>
+            <div className='space-y-4 py-4'>
+              <div className='space-y-2'>
+                <Input
+                  placeholder='Task title'
+                  value={editTaskTitle}
+                  onChange={(e) => setEditTaskTitle(e.target.value)}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Input
+                  placeholder='Description (optional)'
+                  value={editTaskDescription}
+                  onChange={(e) => setEditTaskDescription(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant='ghost' onClick={() => setEditingTask(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditTask}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <main className='flex-1 w-full overflow-auto'>
           <div className='border-b p-3 flex items-center justify-between'>
             <h1 className='text-xl font-bold'>{getCurrentViewTitle()}</h1>
@@ -382,7 +441,7 @@ export default function TodoApp() {
                                 <span className='text-zinc-600 dark:text-zinc-500'>
                                   |
                                 </span>
-                                <p className='text-sm text-zinc-500 dark:text-zinc-400 truncate max-w-[400px]'>
+                                <p className='text-sm text-zinc-500 dark:text-zinc-600 truncate max-w-[400px]'>
                                   {task.description.length > 100
                                     ? task.description.substring(0, 100) + '...'
                                     : task.description}
@@ -390,15 +449,37 @@ export default function TodoApp() {
                               </>
                             )}
                           </div>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            onClick={() => deleteTask(task.id)}
-                            className='h-8 w-8 text-muted-foreground hover:text-red-500'
-                          >
-                            <Trash2 className='h-4 w-4' />
-                            <span className='sr-only'>Delete task</span>
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant='ghost'
+                                size='icon'
+                                className='h-8 w-8 text-muted-foreground'
+                              >
+                                <MoreHorizontal className='h-4 w-4' />
+                                <span className='sr-only'>Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align='end'>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditingTask(task);
+                                  setEditTaskTitle(task.title);
+                                  setEditTaskDescription(
+                                    task.description || ''
+                                  );
+                                }}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className='text-red-600'
+                                onClick={() => deleteTask(task.id)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </Draggable>
