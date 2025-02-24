@@ -410,7 +410,7 @@ export default function TodoApp() {
         </Dialog>
 
         <main className='flex-1 w-full overflow-auto'>
-          <div className='border-b p-3 flex items-center justify-between'>
+          <div className='border-b p-4 flex items-center justify-between'>
             <h1 className='text-xl font-bold'>{getCurrentViewTitle()}</h1>
             {selectedProjectId && (
               <DropdownMenu>
@@ -552,11 +552,7 @@ export default function TodoApp() {
             className='flex gap-3 py-2 px-4 items-center border-b hover:bg-[#27272a80] cursor-pointer'
           >
             <div className='relative flex h-4 w-4 items-center justify-center'>
-              <input
-                type='checkbox'
-                className='peer h-4 w-4 cursor-pointer appearance-none rounded-sm border border-gray-300'
-                disabled
-              />
+              <Plus className='h-4 w-4 text-muted-foreground' />
             </div>
             <div className='text-muted-foreground'>Add task</div>
           </div>
