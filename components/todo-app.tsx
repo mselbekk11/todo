@@ -402,7 +402,7 @@ export default function TodoApp() {
             </div>
             <DialogFooter>
               <Button variant='ghost' onClick={() => setEditingTask(null)}>
-                Cancel
+                Cancell
               </Button>
               <Button onClick={handleEditTask}>Save Changes</Button>
             </DialogFooter>
