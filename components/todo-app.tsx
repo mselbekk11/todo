@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Inbox, Plus, Trash2, Layout, MoreHorizontal } from 'lucide-react';
+import {
+  Inbox,
+  Plus,
+  Trash2,
+  Layout,
+  MoreHorizontal,
+  GripVertical,
+} from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { cn } from '@/lib/utils';
 import {
@@ -33,6 +40,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import EditTaskForm from './edit-task-form';
 
 interface Task {
   id: string;
@@ -364,7 +372,7 @@ export default function TodoApp() {
             <DialogHeader>
               <DialogTitle>Add Task</DialogTitle>
             </DialogHeader>
-            <div className='py-4'>
+            <div className='py-4 space-y-4'>
               <AddTaskForm
                 onSubmit={(task) => {
                   addTask(task);
@@ -384,28 +392,31 @@ export default function TodoApp() {
             <DialogHeader>
               <DialogTitle>Edit Task</DialogTitle>
             </DialogHeader>
-            <div className='space-y-4 py-4'>
-              <div className='space-y-2'>
-                <Input
-                  placeholder='Task title'
-                  value={editTaskTitle}
-                  onChange={(e) => setEditTaskTitle(e.target.value)}
+            <div className='py-4 space-y-4'>
+              {editingTask && (
+                <EditTaskForm
+                  task={{
+                    title: editingTask.title,
+                    description: editingTask.description,
+                  }}
+                  onSubmit={(updatedTask) => {
+                    setTasks((prevTasks) =>
+                      prevTasks.map((task) =>
+                        task.id === editingTask.id
+                          ? {
+                              ...task,
+                              title: updatedTask.title,
+                              description: updatedTask.description,
+                            }
+                          : task
+                      )
+                    );
+                    setEditingTask(null);
+                  }}
+                  onCancel={() => setEditingTask(null)}
                 />
-              </div>
-              <div className='space-y-2'>
-                <Input
-                  placeholder='Description (optional)'
-                  value={editTaskDescription}
-                  onChange={(e) => setEditTaskDescription(e.target.value)}
-                />
-              </div>
+              )}
             </div>
-            <DialogFooter>
-              <Button variant='ghost' onClick={() => setEditingTask(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditTask}>Save Changes</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -458,12 +469,17 @@ export default function TodoApp() {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          {...provided.dragHandleProps}
                           className={cn(
                             'flex gap-3 py-2 px-4 items-center border-b hover:bg-[#27272a80]',
                             snapshot.isDragging && 'bg-accent'
                           )}
                         >
+                          <div
+                            {...provided.dragHandleProps}
+                            className='text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing'
+                          >
+                            <GripVertical className='h-4 w-4' />
+                          </div>
                           <div className='relative flex h-4 w-4 items-center justify-center'>
                             <input
                               type='checkbox'
@@ -484,7 +500,14 @@ export default function TodoApp() {
                               <polyline points='20 6 9 17 4 12'></polyline>
                             </svg>
                           </div>
-                          <div className='flex-1 flex items-center gap-2'>
+                          <div
+                            className='flex-1 flex items-center gap-2 cursor-pointer'
+                            onClick={() => {
+                              setEditingTask(task);
+                              setEditTaskTitle(task.title);
+                              setEditTaskDescription(task.description || '');
+                            }}
+                          >
                             <p
                               className={cn(
                                 'font-medium',

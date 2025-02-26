@@ -1,27 +1,38 @@
 'use client';
 
 import type React from 'react';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-interface AddTaskFormProps {
+interface EditTaskFormProps {
+  task: {
+    title: string;
+    description?: string;
+  };
   onSubmit: (task: { title: string; description?: string }) => void;
   onCancel: () => void;
 }
 
-export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+export default function EditTaskForm({
+  task,
+  onSubmit,
+  onCancel,
+}: EditTaskFormProps) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || '');
+
+  // Update form when task changes
+  useEffect(() => {
+    setTitle(task.title);
+    setDescription(task.description || '');
+  }, [task]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     onSubmit({ title: title.trim(), description: description.trim() });
-    setTitle('');
-    setDescription('');
   };
 
   return (
@@ -45,7 +56,7 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
         <Button type='button' variant='ghost' onClick={onCancel}>
           Cancel
         </Button>
-        <Button type='submit'>Add Task</Button>
+        <Button type='submit'>Save Changes</Button>
       </div>
     </form>
   );
