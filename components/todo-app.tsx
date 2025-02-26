@@ -241,7 +241,7 @@ export default function TodoApp() {
       <div className='flex h-screen w-full bg-background dark:bg-zinc-950'>
         <Sidebar className='flex-shrink-0'>
           <SidebarHeader className='border-b p-4'>
-            <div className='text-xl font-bold text-red-500'>todoist</div>
+            <div className='text-xl font-bold text-red-500'>Taskly</div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -402,7 +402,7 @@ export default function TodoApp() {
             </div>
             <DialogFooter>
               <Button variant='ghost' onClick={() => setEditingTask(null)}>
-                Cancell
+                Cancel
               </Button>
               <Button onClick={handleEditTask}>Save Changes</Button>
             </DialogFooter>
